@@ -1,0 +1,300 @@
+c++程序设计（北京大学）Lecture Notes --1
+------------------------------------------------------------
+------------------------------------------------------------
+1. 构造函数，
+   成员函数，与类同名，执行必要的初始化工作，只要有对象生成就一定要调用构造函数初始化，一定要给一个类写构造函数！如果没有，编译器会自动生成一个无参数的构造函数。构造函数没有返回值。可以有多个构造函数，只要参数不同，形成重构关系。
+
+2. 复制构造函数，
+   只有一个参数，即对同类对象的引用。编译器同样可以默认生成无参的复制构造函数。
+	形如 complex{}; complex( const complex &c){}; OR class A A() {}; A(A&a) {};
+	复制构造函数起作用的三种情况：   	
+	1. 当用一个对象去初始化同类的另一个对象
+	2. 如果某函数有一个参数是类A的对象，那么该函数被调用时，类A的复制构造函数将被调用
+	3. 如果函数的返回值是类A的对象时，则函数返回时，A的复制构造函数被调用
+
+3. 类型转换构造函数， 
+   实现类型的自动转换，只有一个参数，不是复制构造函数，编译系统会自动调用转换构造函数，建立一个临时的对象或变量。class complex complex(int i){} 
+	初始化，complex c2=12; c1=9; //9被自动转换成一个临时complex对象 
+
+4. 析构函数Destructor, 
+   成员函数，与类同名，前面加～，没有参数和返回值，一个类最多只有一个析构函数。在对象消亡时被自动调用，在对象消亡前释放分配的空间new。编译器可生成缺省析构函数。
+	class string{	
+		private: char *p;	
+		public: string(){ p = new char[10]; }
+			~string();
+	}
+	string::~string(){ delete []p; }
+ 	
+	对象数组结束生命时，对象数组的每个元素的析构函数都会被调用
+	delete运算导致析构函数调用
+	当对象离开它的作用域时（最近的花括号），析构函数被调用
+	全局，静态对象/变量的消亡是在整个程序结束时，那时候析构函数才被调用
+
+先构造的后析构，两者调用顺序相反
+
+5. 静态成员, 
+   静态成员函数，static，静态成员变量就一份被所有类的对象共享，sizeof运算符不会计算静态成员变量，静态成员函数并不具体作用于某个对象，因此静态成员不需要通过对象就能访问，本质上静态成员变量是全局变量，静态成员函数是全局函数。用静态成员将和类相关的全局变量封装进类中，更容易理解和维护。
+	访问静态成员： 1.类名::成员名 2.对象名.成员名 3.指针->成员名 4.引用.成员名
+	必须在定义类的文件中对静态成员进行单独的拿出来声明或者初始化
+	静态成员函数中，不能访问非静态成员变量，也不能调用非静态成员函数
+	有一些临时的，隐藏的类的对象用复制构造函数来初始化，所以，如果不写复制构造函数而把静态成员放在构造函数和析构函数里计数计算对象的生成次数会有问题
+
+6. 成员对象: 
+   一个类的成员变量是另一个类的对象，包含成员对象的类叫封闭类.
+		定义封闭类的构造函数时，添加初始化列表: 
+		类名::构造函数(参数表):成员变量1(参数表),成员变量2(参数表){...}
+		当封闭类对象生成时，step1: 执行所有成员对象的构造函数 step2: 执行封闭类的构造函数。成员对象的构造函数调用顺序与成员对象在封闭类中的说明顺序一致，与在成员初始化列表中出现的顺序无关。当封闭类的对象消亡时，先执行封闭类的析构函数，再执行成员对象的析构函数。
+
+		class ctyre{
+			private: int radius; int width;
+			public: ctyre(int r, int w): radius(r), width(w){ } //初始化列表
+				};
+		class cengine{
+			};	
+		class ccar{
+			private: int price; ctyre tyre; cengine engine;
+			public: ccar(int p, int tr, int tw);
+			};
+		ccar::ccar(int p, int tr, int w): price(p), tyre(tr, w){ } //初始化列表
+		int main() {
+			ccar car(200, 17, 225);
+			return 0;			
+			}
+
+7. 友元 friend 友元函数和友元类。
+		一个类的友元函数可以访问该类的私有成员，还可以将一个类的成员函数(包括构造和析构函数)定义为另一个类的友元。
+		class cdriver{
+			public: void modifycar(ccar*pcar);
+			};
+		class ccar{
+			private: int price;
+			friend int mostexpensivecar(ccar cars[], int total);
+			friend void cdrive::modifycar(ccar*pcar);
+			};
+		----------------------------------
+		class B{
+			public: void function;
+			};
+		class A{
+			friend void B::function();
+			};
+		
+		友元类, A是B的友元类，则A的成员函数可以访问B的私有成员，友元类之间的关系不能传递不能继承
+		class ccar{
+			private: int price;
+			friend  class cdrive; //声明cdiver为友元类
+			};
+
+8. this指针,
+   其作用就是指向成员函数所作用的对象。非静态成员函数中可以直接使用this来代表指向该函数作用的对象的指针，静态成员函数中不能使用this指针，因为静态成员函数并不具体作用于某个对象，因此静态成员函数的真实的参数的个数就是程序中写出的参数个数。
+		
+9. 常量对象，常量成员函数和常引用，
+   	class Demo{}; const Demo obj; //常量对象，不希望该对象的值被改变
+	常量成员函数执行期间不应该修改其所作用的对象，因此，在常量成员函数中不能修改同类的成员变量的值（静态成员变量除外），也不能调用同类的非常量成员函数（静态成员函数除外）。但常量对象上可以执行常量成员函数。两个成员函数，名字和参数表都一样，但是一个是const，一个不是，这也算重载。
+	class sample{
+		public: void getvalue() const;
+		};
+	void sample::getvalue() const {}
+	引用前面可以加const关键字成为常引用，不能通过常引用修改其引用的变量 const int& r = n;
+	可以用对象的常引用作为函数的参数，这样就能确保既不会生成新的对象调用类的复制构造函数，也不会出现无意中更改o值从而改变原对象的值的语句了 class sample{}; void printfobj(const sample & o{}
+
+10. 运算符重载，
+    对抽象的数据类型也能够直接使用C++提供的传统运算符，比如两个复数的加法，对已有的运算符赋予多重的含义，使同一运算符作用于不同类型的数据时有不同类型的行为。运算符重载的实质时函数重载。
+	返回值类型 operator 运算符(行参表) {}
+	运算符被多次重载时，根据实参的类型决定调用那个运算符重载函数，运算符自身可以被重载成普通函数也可以被重载成类的成员函数。重载为普通函数时，参数个数为运算符目数，重载为成员函数时，参数个数为运算符目数减一，只传递后面的操作数!
+	complex operator+ (const complex& a, const complex& b)
+		{
+			return complex(a.real+b.real, a.imaginary+b.imaginary);				 			} 
+	--------------------------------------------------------------------------
+	class complex{
+		public:
+			complex(double r=0.0, double m= 0.0): real(r), imaginary(m) {} //构造函数
+			complex operator+ (const complex&); // addition
+		private: double real; double imaginary;
+		};
+	complex complex::operator+ (const complex& operand2){                  // overload addition operator
+		return complex(real + operan2.real, imaginary + operan2.imaginary); 
+		}
+	int main() {
+		complex x, y(4.3,8.2), z(3.3, 1.1);
+		x = y + z ; // 相当于 x= y.operator + z;
+	}
+
+11. 赋值运算符的重载，
+	'=' 是可以作用在对象之间的，但当两边的类型不匹配时需要重载赋值运算符'='，只能将其重载为成员函数，不可以将其重载为普通函数。重载赋值运算符的意义：浅复制和深复制。
+	class string{
+		private: char *str;
+		public: 
+			string(): str(NULL) {} //构造函数，初始化列表初始化str为NULL
+			const char *c_str() {return str;} // const char* 类型函数
+			char *operatror = (const char *s);
+			~string();
+	};
+	char *string::operator = (const char*s){
+		if(str == s.str) return *this;
+		if(str) delete[] str;
+		if(s) {  //s不为NULL才会拷贝
+			str = new char[strlen(s)+1]; // +1为了存放 ' /0 '
+			strcpy(str,s);
+		}
+		else str=NULL; 
+		return str;	
+	}
+	string:: ~string() {
+		if(str) delete[] str;
+	};
+	int main(){
+		string s;
+		s = "good luck"; // s.oeprator = ("good luck");
+		cout << s.c_str() << endl;
+		return 0;
+	}
+
+	浅复制/浅拷贝： 执行逐个字节的复制工作 容易产生一段内存垃圾和另一段内存被释放两次产生错误
+	深复制/深拷贝： 将一个对象指针变量指向的|内容|复制到另一个对象中|指针成员对象指向的空间
+	深拷贝：	在class MyString里添加成员函数：
+		String& operator = (const String& s){  // 重载函数，参数表里string类对象的引用，为了保证不影响自身，+const
+			if(str) delete []str;
+			str = new char[strlen(s.str)+1]; // 当前对象的str指向新生成的空间
+			strcpy(str, s.str);     //传入的参数对象指针和当前对象指针指向的内存空间不同，但是内容相同
+			return *this;		//返回当前对象
+		}
+	
+	operator= 的返回值类型的讨论 好的风格：尽量保留运算符原本的特性
+		设计重载函数时，使用string& 引用！ (a = b) = c => (a.operator=(b)).operator=(c); 
+	
+	为string类编写复制构造函数时，会面临和'='同样的问题(调用默认的复制构造函数产生的浅拷贝)，用同样的方法。
+		e.g string s1; s1 = "hello"; string s2(s1);
+		string :: string(string &s){
+			if(s.str){
+				str = new char[strlen(s.str)+1];
+				strcpy(str, s.str);
+			}
+			else str == NULL;
+		}
+
+12. 运算符重载为友元，
+	为了满足一定的功能还要可以访问私有成员。e.g. c=5+c
+		public : friend complex operator+ (double r, const complex& c);
+
+13. 长度可变的整形数组类
+	1. 用动态分配的内存来存放数组元素，需要一个指针成员变量，在析构函数里释放动态内存 
+	2. 要重载"=" 3. 要重载"[]" 4. 要自己写复制构造函数
+	3. 数组CArray a for(int i=0; i<5; ++i) a.push_back(i); // 成员函数 a[]= {0,1,2,3,4};
+		for(int i=0; i<a.length(); ++i) cout<< a[i]<<""; 		cout<<endl //换行
+	4. CArray a2,a3; a2=a; a2[i]; 需要重载"="，"[]"
+	5. 自己写复制构造函数
+	6. 非引用的函数返回值不可作为等号作值使用
+	class CArray{
+		int size;  // 数组元素的个数
+    		int *ptr;  // 指向动态分配的数组
+	public:
+		CArray(int s=0); //构造函数，s代表数组元素的个数
+		CArray(CArray & a); //复制构造函数
+		~CArray();
+		void push_back(int v);  // 用于在数组尾部添加一个元素v
+		CArray & operator = (const CArray & a); // 用于数组对象间的赋值
+		int length() { return size;}   	//返回数组元素个数
+		int & CArray::operator[](int i) { return ptr[i];} // 用以至此根据下标访问数组元素如a[i] = 4; 而且是函数返回类型时int的引用
+	}
+	CArray:: CArray(int s):size(s) { 
+		if(s == 0) ptr = NULL;
+		else ptr = new int[s];
+	}
+	CArray:: CArray(CArray &a){  //完成深拷贝
+		if(!a.ptr) {
+			ptr = NULL;
+			size = 0;
+			return;
+		}
+		ptr = new int[a.size]; //新分配一段和a相同大小的空间
+		memcpy(ptr, a.ptr, sizeof(int)*a.size); //把a的内容复制到新分配的这个空间中，最后一个*为乘号
+		size = a.size;  // size也给赋值
+	}
+	CArray:: ~CArray() { if(ptr) delete []ptr;}
+	CArray & CArray:: operator= (const CArray &a){ 
+		//赋值号被重载后的返回值为CArray的引用，赋值表达式返回值本来就是赋值号左边变量的引用
+		//使“=”左边对象里存放的数组大小和内容与右边对象一样，同样是深拷贝的效果
+		if (ptr == a.ptr) return *this; //首先要先判断防止a=a这样的赋值错误
+		if (a.ptr == NULL){
+			if(ptr) delete []ptr;
+			ptr = NULL;
+			size = 0;
+			return *this;
+		}
+		if(size < a.size){  //如果原有空间够大，就不用分配新的空间
+			if(ptr) delete []ptr;
+			ptr = new int[a.size];
+		}
+		memcpy(ptr, a.ptr, sizeof(int)*a.size);
+		size = a.size;
+		return *this;
+	}
+	void CArray:: push_back(int v){
+		if(ptr){
+			int *tmpptr = new int[size+1]; //重新分配空间
+			memcpy(tmpptr, ptr, sizeof(int)*size); //拷贝元数组内容
+			delete []ptr;
+			ptr = tmpptr;
+		}
+		else ptr = new int[1]; //如果数组本来是空的
+		ptr[size++] = v; //加入新的数组元素
+	}
+
+14. 流插入运算符和流提取运算符的重载，
+	cout是在iostream（头文件）中定义的，ostream类的对象。“<<”（左移运算符）能用在cout上是因为在iostream头文件里对<<进行了重载。 重载<<两次使得 cout<< 5 <<"this";成立 即cout.operator<<5.operator<<("this");
+	ostream & ostream::operator<<(int n){
+		...//输出n的代码
+		return *this; // this指针指向了成员函数作用的对象，就是cout，那么函数的返回值就是cout的引用
+	}
+	ostream & ostream::operator<<(const char*s){
+		...//输出s的代码
+		return *this;
+	}
+	-------------------------------------------------
+	对象引用可节省开销，不用调用赋值构造函数 
+	cout << s <<"hello";
+	ostream & operator<<(ostream & o, const CStudent & s){
+		o << s.nAge;
+		return o; // o = cout
+	}
+
+15. 自加/减运算符的重载，
+	++/-- 前置/后置
+	前置运算符作为一元运算符重载，重载为成员函数时T operator++(); 重载为全局函数时 T operator++(T);
+	后置运算符作为二元运算符重载，需要多谢一个参数，具体无意义，重载为成员函数时T operator++(int); 重载为全局函数时 T operator++(T,int);
+	int main(){
+		CDemo d(5);
+		cout<< (d++) << ","; //等价于d.operator++(0);
+		cout<< d << ",";
+		cout << (++d) << ","; //等价于d.operator++();
+		cout<< (d--) << ","; //等价于d.operator--(d,0);
+		cout << (--d) << ","; //等价于d.operator--(d);
+	}
+	class CDemo{
+		private : int n;
+		public:
+			CDemo(int i=0): n(i){}  //构造函数
+			CDemo operatror++();    //用于前置形式
+			CDemo operator++(int);  //用于后置形式
+			operator int() {return n;} //int作为一个强制类型转换运算符被重载 int(s)等效于s.int();
+			// 类型强制转换运算符重载时，不能写返回值类型，实际上其返回值类型为强制类型转换运算符代表的类型
+			friend CDemo operator-- (CDemo &);  //声明为全局函数，必须是友元才能去访问private里的n
+			friend CDemo operator --(CDemo &, int);
+	}
+	CDemo CDemo:: operator++(int k){
+		CDemo tmp(*this); //记录修改前的对象
+		n++;	
+		return tmp;	//返回修改前的对象
+	}
+	CDemo operator--(CDemo &d, int){ //后置-- 全局函数没有了CDemo::
+		CDemo tmp(d);
+		d.n--;
+		return tmp;
+	}
+	CDemo operator--(CDemo &d）{ /前置--
+		d.n--;
+		return d;
+	}
+
+	运算符重载不改变运算符的优先级，".",".*","::","?:",sizeof不能被重载，(),[],->,=的重载函数只能为类的成员函数
