@@ -1,0 +1,220 @@
+c++程序设计（北京大学）Lecture Notes --4
+------------------------------------------------------------
+------------------------------------------------------------
+26. 文件操作
+	数据的层次： 位bit，字节byte，域/记录，顺序文件（一个有限字符构成的顺序字符流）
+	C++标准库中文件流类： ifstream, ofstream, fstream用于文件操作
+			ios 
+	    istream            ostream
+      ifstream   iostream        ofstream
+       		  fstream
+	打开文件，读写文件，关闭文件
+		通过指定文件名，建立文件和文件流对象的关联；指明文件的使用方式；利用读/写指针进行相应位置的操作；关闭
+	建立顺序文件
+     		第一种方式：#include <fstream>     //包含头文件
+		ofstream outfile("client.dat", ios::out|ios::binary); //ofstream是fstream中定义的类，outfile是ofstream类的对象，传递将要建立的文件名clients.dat， 打开并建立文件的选项 
+							ios::out  输出到文件，删除原有内容
+							ios::app  输出到文件，保留原有内容，在尾部添加
+							ios::binary 以二进制文件格式打开文件
+		
+		第二种方式： 先创建ofstream对象，再用open函数打开
+			ofstream fout;
+			fout.open("test.out", ios::out|ios::binary);
+			if(!fout) { cerr << "file open error!" << endl;} // 判断打开是否成功
+		文件名可以给出绝对路径也可以是相对路径，没有路径信息就时在当前文件夹下找文件
+	文件的读写指针
+		对于输入文件：读指针；输出文件：写指针；输入输出文件：读写指针，指针标识文件操作的当前位置
+		ofstream fout("a1.out", ios::app);
+		long location = fout.tellp();  //取得写指针的位置
+		location = 10L;			// location可以是负值
+		fout.seekp(location);       //将写指针移动到第10个字节处
+		fout.seekp(location, ios::beg); //从头数location	
+ 		fout.seekp(location, ios::cur); //从当前位置数location	
+		fout.seekp(location, ios::end); // 从尾部数location
+		----------------------------------------------------------
+		ifstream fin("a1.out", ios::app);
+		long location = fin.tellg();  //取得读指针的位置
+		location = 10L;			// location可以是负值
+		fout.seekg(location);       //将读指针移动到第10个字节处
+		fout.seekg(location, ios::beg); //从头数location	
+ 		fout.seekg(location, ios::cur); //从当前位置数location	
+		fout.seekg(location, ios::end); // 从尾部数location
+		------------------------------------------------------------
+	二进制文件读写（尽量保持一致）
+		int x=10;
+		fout.seekp(20, ios::beg);
+		fout.write((const char*)(&x), sizeof()int);  //写
+		fout.seekg(20, ios::beg);
+		fout.read((char*)(&x), sizeof()int);  //读
+		-------------------------------------------------------------
+		#include <iostream>
+		#include<fstream>
+		#include<cstring>
+		using namespace std;
+		class CStudent{
+			public:
+				char szName[20];
+				int nScore;
+		}
+		int main(){
+			CStudent s;
+			ofstream OutFile ("c:\\tmp\\students.dat", ios::out|ios::binary);  // 以二进制进行写入
+			ifstream inFile ("students.dat", ios::in|ios::binary);
+			if(!inFile){
+				cout << "error" << endl;
+				return 0;
+			}
+			while(cin >> s.szName >> s.nScore){
+				if(strcmp(s.szName, "exit") == 0)  // 名字为exit则结束
+					break; 
+				OutFile.write((char*)&s, sizeof(s));  // 写入字串，s对象的引用
+			}
+			while (inFile.read((char*)&s, sizeof(s))){
+				int nReadedBytes = inFile.gcount(); // 看刚才读了多少字节
+				cout << s.szName << "" << s.score << endl;
+			}
+			OutFile.close();
+			return 0;
+		}
+		----------------------------------------------------------------------
+		int main(){
+			CStudent s;
+			fstream iofile ("c:\\tmp\\students.dat", ios::in|ios::out|ios::binary); // 同时以二进制进行读和写
+			if(!inFile){
+				cout << "error" << endl;
+				return 0;
+			}
+			iofile.seekp(2*sizeof(s), ios::beg);    //定位写指针到第三个记录的起始位置
+			iofile.write("Mike", strlen("Mike")+1);	//写入mike字串
+			iofile.seekg(0, ios::beg);		//定位读指针到开头，偏移量为0，重新读出来
+			while (iofile.read((char*)&s, sizeof(s))){
+				cout << s.szName << "" << s.score << endl;
+			}
+			iofile.close();
+			return 0;
+		}
+		---------------------------------------------------------------------------
+		显示关闭文件 ifstream fin();-- fin.close(); ofstream fout(); -- fout.close();
+		----------------------------------------------------------------------------
+		例子：mycopy程序，文件拷贝，src.dat --> dest.dat (mycopy src.dat dest.dat)
+			#include <iostream>
+			#include<fstream>
+			using namespace std;
+			int main(int argc, char *argv[]){ //命令行程序，两个参数，命令行操作的参数的个数和字串
+				if(argv != 3){  // 判断命令是否正确，命令少于三个
+					cout << "file name missing" << endl;
+					return 0;
+				}
+				ifstream inFile(argv[1], ios::binary|ios::in); //打开传进来的第二个参数文件用于读
+				if(!inFile){
+				cout << "Source file open error" << endl;
+				return 0;
+				}
+				ofstream outFile (argv[2], ios::out|ios::binary); //打开传进来的第三个参数文件用于写
+				if(!outFile){
+				cout << "New file open error" << endl;
+				inFile.close();  //打开的文件一定要关闭
+				return 0;
+				}
+				char c;
+				while(inFile.get(c))              //每次读取一个字符
+					outFile.put(c);           //每次写入一个字符
+				outFile.close();
+				inFile.close();
+				return 0 ;
+			}
+
+27.函数模版
+	泛型程序设计 generic programming, 算法实现时不指定具体要操作的数据类型，大量编写模版，减少重复代码的编写
+		函数模版，类模版
+		template<class 类型参数1, class 类型参数2,...>
+		返回值类型 模版名（行参表）
+		{ 函数体 }
+	函数模版可以重载，只要他们的形参表不同
+			template<class T1, class T2>
+			void print(T1 arg1, T2 arg2){ }
+			template<class T>
+			void print(T arg1, T arg2){ }
+	C++编译器优先寻找参数完全匹配的普通函数，再找参数类型完全匹配的模版函数，再找实参经过自动类型转换后能够匹配的普通函数	
+	赋值兼容原则引起函数模版中类型参数的二义性，使用多个类型参数可以避免
+
+28. 类模版
+	在定义类的时候给他一个/多个参数，这些个参数表示不同的数据类型。在调用类模版时，制定参数，由编译系统根据参数提供的数据类型自动产生相应的模版类
+		template<class 类型参数1, class 类型参数2,...>
+		class 类模版名
+		{ 成员函数和成员变量 }；
+	类模版的成员函数如果在类模版外面定义时，
+		template<形参表>
+		返回值类型 类模版名 <类型参数名列表>::成员函数名（参数表）{...}
+	类模版定义对象的写法： 类模版名<真实类型参数表> 对象名（构造函数实际参数表）；
+	如果类模版有无参构造函数，那么，类模版名<真实类型参数表> 对象名；
+		e.g. template <class T1, class T2>
+		class Pair{
+		public: 
+			T1 key;
+			T2 value;
+			Pair(T1 k, T2 v): key(k), value(v){};
+			bool operator< (const Pair<T1,T2>> & p) const;
+		};
+		template<class T1, class T2> bool Pair<T1,T2>::operator< (const Pair<T1,T2>> & p) const
+			{return key < p.key;}  // pair的成员函数operator<
+		int main(){
+			Pair<string, int> student("Tom" , 19);
+			cout << student.key << "" << student.value;
+			return 0;
+		}
+	类模版的实例化：编译器自动用具体的数据类型替换类模版中的类型参数，生成模版类的代码
+	同一个类模版的两个模版类是不兼容的，这两个类对象不能相互赋值
+	函数模版也可以作为类模版成员，但是两者的类型参数表中的参数是不可以一样的
+	类模版的参数声明中可以包括非类型参数来标记类模版的固定属性 template<class T, int elementsNumber>
+	类模版与继承
+		1.类模版 派生出 类模版
+		2.模版类 派生出 类模版
+		3.普通类 派生出 类模版
+		4.模版类 派生出 普通类
+
+	e.g 1 template<class T1, class T2>
+		class A {T1 v1; T2 v2; };
+	      template<class t1, class t2>
+		class B: public A<T2,T1> {T1 v3; T2 v4;};
+	      template<class T>
+		class C: publicB <T,T> { T v5;};
+	      int main() { B<int, double} obj1; C<int> obj2; return 0;}
+ 	----------------------------------------------------------------------
+	e.g 2 template<class T1, class T2>
+		class A {T1 v1; T2 v2;};
+	      template<class T>
+		class B: public A<int, double> {T v;};  // class B从实例化的A的模版类中派生出来
+	      int main() {B<char> obj1; return 0 ;}
+		
+29. string类
+	string类是一个模版类，使用时需要包含头文件<string>, 它的构造函数可以一个参数也可以两个参数，但是不可以有字符和整数，可以将字符赋值给string对象但是不可以通过初始化的方法，string s; s = 'n';
+		string s2(8, 'x'); // 第一个参数对应这个字符出现的个数，第二个参数是对应的字符
+	string对象的长度用成员函数length()读取，string支持流读取运算符，getline函数
+		string stringobject; cin >> stringobject; getline(cin, stringobject);
+	string的赋值和连接
+		1. 用'='赋值 string s1("cat"), s2;  s1 = s2;
+		2. 用assign成员函数复制  s1.assign(s2);
+		3. 用assign成员函数部分复制 string s1("catpig"), s3;  s3.assign(s1,1,3);//从s1中下标为1的字符开始复制3个字符给s3
+		4. 单个字符复制 s2[5] = s1[3] = 'a';
+		5. 逐个访问string对象中的字符 s1.at(i) 成员函数at会做范围检查，超出范围会抛出out_of_range异常，而下标运算符不做饭为检查
+		6. 用+运算符连接字符串 s1 += s2;
+		7. 用成员函数append连接字符串 s2.appemd(s1,3, s1.size()); //从下标3开始，复制s1.size()多个字符
+	string可以用关系运算符比较，返回值都是bool类型
+	字串，用成员函数substr()  s2 = sa.substr(4,5); // 下标为4开始取5个字符
+	成员函数find(); 从前往后查找要查找的字符串第一次出现的地方，找到返回字符串开始的位置下标，找不到返回string::npos, s1.find("ll",3); 从下标3开始查找“ll”. 成员函数rfind(); 从后往前找。成员函数find_first_of(); s1.find_first_of("abcd")在s1中从前往后查找"abcd"中任何一个字符第一次出现的地方，如果找到返回找到字母的位置，找不到返回string::npos。find_last_of();最后一次出现的地方。 find_first_not_of/find_last_not_of 从前往后/从后往前查找不在abcd中的字母第一次出现的地方，找不到返回string::npos。
+	用成员函数erase() s1.erase(5) // 去掉下标为5以及之后的字符. 
+	成员函数replace() s1.replace(2,3,"haha",1,2); //将s1中下标为2开始的3个字符换成“haha”中下标1开始的2个字符。
+	成员函数insert()在string中插入字符 s1.insert(2, s2,5,3); // 将s2中下标从5开始的3个字符插入s1下标2的位置
+	成员函数c_str() 转换成C语言式char*类型字符串且该字符串以'\0'结尾 printf("%s\n", s1.c_str()); 
+
+30. 输入和输出，
+	输出流对象： cerr(与标准错误输出设备相连) clog(与标准错误输出设备相连) 两者用于向屏幕输出出错信息
+	输出重定向 freopen("test.txt", "w", stdout); // 将标准输出重定向到test文件
+	输入重定向 freopen("t.txt", "r", stdin); // cin被改为从t.txt文件中读取数据
+	判断输入流结束 while(xin >> x){} 如果时从文件输入，读到文件尾部输入流结束，如果从键盘输入，则在单独一行输入ctrl+z代表输入流结束
+	istream类的成员函数 istream & getline(char*buf, int bufSize); or istream & getline(char*buf, int bufSize, char delim); 两个函数都会自动在buf中读入数据的结尾添加'\0'，dlim或者'\n'都不会被读入buf，但可以从输入流中取走。可以用if(!cin.getline(...))判断输入流是否结束。
+	bool eof(); //判断输入流是否结束     int peek();//返回下一个字符，但不从流中去掉，可以决定下一步要干啥
+	istream & putback(char c);//把一些字符塞回流中去  istream & ignore(int nCount=1, int delim = EOF); //跳过流中一些字符
+	
+	

@@ -1,0 +1,59 @@
+c++程序设计（北京大学）Lecture Notes --2
+------------------------------------------------------------
+------------------------------------------------------------
+16. 继承和派生，
+	继承: 在定义一个新的类B时，如果该类与某个已有的类A相似（B拥有A的全部特点）那么就可以把A作为一个基类，而把B作为类的一个派生类（子类）。派生类拥有基类的全部成员函数和成员变量，它也可以扩充新的成员变量和成员函数，派生类一经定义后可以独立使用不依赖于基类。派生类的各个成员函数中，依然不能访问基类的private成员。
+	class 派生类名: public 基类名
+	派生类对象中包含着基类对象，而且基类对象的存储位置位于派生类对象新增的成员变量之前
+
+17. 继承关系和复合关系
+	继承关系: B是基类A的派生类，一个B对象也是一个A对象
+	复合关系: 类C中有成员变量K，K是类D的对象，则C和D是复合关系
+		点类class CPoint{ double x,y; friend class CCircle} //友元便于CCircle类访问操作其圆心 
+		圆类class CCircle{double r; CPoint center;}
+		------------------------------------------------------
+		class CMaster;
+		class CDog{ CMaster *pm;}; //狗类设一个主人类的对象指针，狗指向唯一的主人
+		class CMaster{CDog *dogs[10];};	// 为主人类设一个狗类的对象指针数组，指向拥有的多条狗
+
+18.基类/派生类同名成员与Protected关键字
+	base和derived类两者有同名成员时，在派生类的成员函数中，引用基类的i需要base::i=5; 在main函数里，derieved obj; obj.i = 1; obj.base::i = 1; 不推荐两者有相同命名的变量
+	基类的private成员只能被基类的成员函数和基类的友元函数访问。基类的public成员可以被基类的成员函数，基类的友元函数，派生类的成员函数，派生类的友元函数以及其他函数访问。基类的protected成员可以被基类的成员函数，基类的友元函数，派生类的成员函数可以访问|当前所在对象的|基类的保护成员
+
+19.派生类的构造函数，
+	派生类对象包含基类对象，在创建派生类的对象时，执行派生类构造函数之前，先执行基类的构造函数去初始化派生类对象中从基类继承的成员，还需要调用派生类里的成员对象类的构造函数去初始化派生类对象中的成员对象。派生类的析构函数被执行时，执行完派生类的析构函数后，先调用成员对象类的析构函数再自动调用基类的析构函数。（析构函数与构造函数的调用顺序相反）
+	调用基类构造函数的两种方式：
+		1.构造函数名（形参表）：基类名（基类构造函数实参表）{ }
+		e.g FLyBug::FlyBug(int legs, int color, int wings):Bug(legs, color){};	
+		2. 隐式方式，派生类构造函数省略基类构造函数，自动调用默认构造函数
+	包含成员对象的派生类的构造函数
+		class skill{
+			public: skill(int n){}
+		};
+		class FlyBug: public Bug{
+			int nWings;
+			skill: sk1, sk2;
+			public:
+				FlyBug(int legs, int color, int wings);
+		};	
+		FLyBug::FlyBug(int legs, int color, int wings):Bug(legs, color),sk(5),sk2(color){ 
+			//也需要调用其成员对象的类的构造函数去进行初始化成员对象
+			nWings = wings;
+		};
+
+20. Public继承的赋值顺序兼容规则  派生类对象中包含着基类对象，而且基类对象放在派生类对象之前
+	class base{};
+	class derived: public base{};
+	base b;
+	derived d;
+		1. 派生类的对象可以赋值给基类对象: b=d; 不可以相反
+		2. 派生类对象可以初始化基类引用: base &br=d;
+		3. 派生类对象的地址可以赋值给基类指针: base *pb=&d; 
+	** 如果派生方式是private or protected 则三条上述不成立
+	可以有多层派生，所以有直接基类和间接基类，自动向上继承
+		在声明派生类时，只需要列出它的直接基类，
+			class MoreDerived:public Derived{ //Derived 是MoreDerived 的直接基类，顶层基类Base不用列出
+				MoreDerived(): Derived(4){}
+				~MoreDerived(){}
+			};
+		派生类的成员包括:派生类自己定义的成员，直接基类和所有间接基类中的全部成员

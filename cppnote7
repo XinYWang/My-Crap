@@ -1,0 +1,87 @@
+c++程序设计（北京大学）Lecture Notes --7
+------------------------------------------------------------
+------------------------------------------------------------
+40. 强制类型转换
+	1) static_cast
+		低风险的转换，不能在不同类型的指针或者引用之间转换，也不能用于整型和指针之间的互相转换
+		类型转换运算符被重载时函数不写返回值,强制转换成什么类型就返回什么类型 
+		class A{
+		public:
+			operator int() {return 1;}
+			operator char*() {return NULL;}
+		}
+		A a;		
+		p = static_cast<int>(a);
+		p = static_cast<char*>(a);
+	
+	2) reinterpret_cast
+		不同类型的指针或者引用之间转换，以及指针和能容纳的下指针的整数类型之间的转换，转换的时候执行逐个bit拷贝的操作
+		A a(100);
+		int& r = reinterpret_cast<int&>(a);  //强行让r引用a
+		A* pa = reinterpret_cast<A*> (&n);
+	
+	3) const_cast
+		去除const属性的转换，可以将const引用/指针转换成同类型的非const的引用/指针
+		const string s = "hello";
+		string& p = const_cast<string&>(s);
+		string* ps = const_cast<string*>(&s);
+
+	4) dynamic_cast
+		专门用于将多态基类的指针或引用强制转换为派生类的指针或引用，而且能够检查转换的安全性，指针转换不安全返回NULL，引用转换不安全抛出异常，不能用于非多态基类的指针或引用
+		class base{
+		public:
+			virtual ~base(){}
+		};
+		class derived: public base {};
+		int main() {
+			base b;
+			derived d;
+			derived* pd;
+			pd = reinterpret_cast<derived*>(&b);
+			pd = dynamic_cast<derived*>(&b);	//基类指针指向一个基类对象，转换不成功
+			base* pb = &d;
+			pd = dynamic_cast<derived*>(pb);	//安全的转换，因为pb指向一个派生类的对象
+		}
+
+41. 异常处理
+	程序错误：数组元素下标越界，访问NULL指针，除数为0，动态内存分配new需要的存储空间太大
+	把异常与函数的接口分开，能够区分不同的异常。在函数体外捕获所发生的异常
+	用try,catch处理异常
+		int main(){
+			double m,n;
+			cin >> m >> n;
+			try{
+				if(n == 0)
+					throw -1; //抛出int类型异常, 立即停止运行程序
+				else if( m == 0)
+					throw -1.0; //抛出double型异常
+				else
+					cout << m/n << endl;
+			}
+			//一个try后面可以跟着很多catch块
+			catch(double d){	//无异常的话所有catch块都不会被执行直接跳过,由异常的话从上到下依次匹配
+				cout << "catch(double)" << endl;
+			}
+			catch(int e){
+				cout << "catch(int)" << endl;
+			}
+			catch(...){		//匹配任何类型
+				cout << "catch(...)" << endl;
+			}
+		}
+	异常的再抛出
+		如果异常在本函数中没被处理只被抛出了，就会被抛给常一层函数处理
+	C++标准异常类
+		从exception类派生出来的一些类代表异常，如bad_typeid, bad_cast, bad_alloc, ios_base::failure
+			bad_cast: 再用dynamic_cast进行不安全强制转换时，抛出此异常
+				void PrintObj(Base& b){
+					try{
+						derived& rd = dynamic_cast<derived&>(b);
+						rd.Print();
+					}
+					catch(bad_cast& e){
+						cerr << e.what() << endl;
+					}
+				}
+			bad_alloc: 在用new运算符进行动态内存分配时，如果没有足够的内存，则会引发此异常
+			out_of_range: 用vector或string的ai成员函数根据下标访问元素时，如果下标越界，则会抛出此异常

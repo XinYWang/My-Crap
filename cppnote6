@@ -1,0 +1,187 @@
+c++程序设计（北京大学）Lecture Notes --6
+------------------------------------------------------------
+------------------------------------------------------------
+39. C++11 新特性
+	1）统一的初始化方法 
+		int arr[3]{1,2,3};
+		vector<int>iv{1,2,3};
+		map<int, string> mp{{1,"a"},{2,"b"}};
+		string str{"HELLO WORLD"};
+		int *p = new int[20]{1,2,3};
+		-----------------------------
+		struct A{ int i,j; A(int m , int n):i(m), j(n){ }};
+		A func(int m , int n) {return {m,n};}
+		int main() {A *pa = new A {3,7};}
+
+	2）成员变量默认初始值
+		class B {public: int m = 1234;}
+		int main() {B b; cout << b.m << endl; return 0;}
+
+	3）auto 关键字
+		用于定义变量，编译器自动判断变量的类型，但是必须要对变量初始化
+		auto i = 100;
+		auto p = new A();
+		map<string, int, greater<string>> mp;
+		for(auto i= mp.begin(); i!=mp.end(); ++i)  cout << i->first << "," << i->second;
+		--------------------------------------------------------
+		class A{};
+		A operator + (int n, const A& a) {return a;}
+		template <class T1, class T2>
+		auto add(T1 x, T2 y) -> decltype(x+y) { return x+y;} //decltype用来做返回表达式的类型判别， struct A{double x}; const A*a = new A(); decltype((a->x)) x4=t; // x4的类型是double类型的引用
+		auto d = add(100, A()); // d是A类型
+
+	4）智能指针shared_ptr
+		头文件 <memory>，通过智能指针的构造函数，可以让shared_ptr对象托管一个new运算符返回的指针： shared_ptr<T> ptr(new T); //T可以是int,char,类名等各种类型 
+		此后ptr就可以像T*类型的指针一样来使用，即*ptr就是用new动态分配的那个对象，不必担心释放内存的事。
+		多个智能指针对象可以同时托管一个指针，系统会维护一个托管计数。当无shared_ptr托管该指针时，delete该指针
+		shared_ptr对象不能托管指向动态分配的数组的指针，否则程序出错
+		#include<memory>
+		#include<iostream>
+		using namespace std;
+		struct A{
+			int n;
+			A(int v=0):n(v){};
+			~A() {cout << n << "destructor" << endl;}
+		};
+		int main() {
+			shared_ptr<A>sp1(new A(2));	//sp1托管A(2)
+			shared_ptr<A>sp2(sp1);		//复制构造函数初始化sp2，sp2也托管A(2)
+			cout << "1)" << sp1->n << "," << sp2->n << endl;
+			shared_ptr<A>sp3;
+			A* p = sp1.get(); 	//取得sp1托管的指针，p指向A(2)
+			cout << "2)" << p->n << endl;
+			sp3 = sp1;		//sp3托管A(2)
+			cout << (*sp3).n << endl; //输出2
+			sp1.reset();		//无参数，sp1放弃托管A(2)
+			if(!sp1) 
+				cout << "sp1 is null" << endl;
+			A* q = new A(3);	
+			sp1.reset(q);		//sp1托管q
+			//在所有智能指针放弃托管一个对象时，这个new出的对象会被析构函数自动delete掉，程序结束时，所有对象都会被delete掉
+		}
+		--------------------------------------------------------------------------
+		A* p = new A();
+		shared_ptr<A> ptr(p);
+		shared_ptr<A> ptr2;
+		ptr2.reset(p); // 并不增加ptr中对p的托管计数，编译器并不知道这里的p和前面的初始化ptr指针的p是一个东西
+		//当main结束，所有ptr对象消亡时，p被delete了两次，程序崩溃
+
+	5）空指针nullptr
+		int* p1 = NULL;
+		int* p2 = nullptr;
+		shared_ptr<double>p3 = nullptr;
+		if(p1 == p2)	//ture
+		if(p3 == NULL)	//true
+		if(p3 == p2) 	// error
+		bool b = nullptr	// b=flase; nullptr不能自动转换成整型
+
+	6) 基于范围的for循环
+		struct A {int n; A(int):n(i){} };
+		int ary[] = {1,2,3,4,5};
+		for(int& e: ary)	//e是数组元素的引用
+			e*=10;
+		for(int e: ary)
+			cout << e << ",";	// 100,200,300,400,500
+		vector<A>st(ary, ary+5);
+		for( auto& it: st)	// it也是引用
+			it.n *=10;
+		for(A it:st)
+			cout << it.n << ",";
+
+	7）右值引用和move定义
+		右值：一般来说，不能取地址的表达式，就是右值，能取地址的就是左值
+		class A{};
+		A& r = A();	//error, A()是临时变量，是右值
+		A && r = A();	//ok, r是右值引用, 两个&& 
+		右值引用是提高程序运行的效率，减少需要进行深拷贝的对象进行深拷贝的次数
+		class String{
+		public:
+			char* str;
+			String(): str(new char[1]) {str[0] = 0;}
+			String(const char* s){
+				str = new char[strlen(s)+1];
+				strcpy(str,s);
+			} 
+			String (const String& s){	//复制构造函数
+				cout << "copy constructor called" << endl;
+				str = new char[strlen(s.str)+1];
+				strcpy(str, s.str); // 深拷贝
+			}
+			string& operator= (const String& s){	//两个对象之间的复制需要深拷贝
+				cout << "copy operator= called" << endl;
+				if(str!=s.str){
+					delete[] str;
+					str = new char[strlen(s.str)+1];
+					strcpy(str, s,str);
+				}
+				return *this;
+			}
+			//move constructor移动构造函数 参数是右值引用 
+			String(String && s): str(s.str) {	//不再进行深拷贝的操作
+				cout << "move constructor called" << endl;
+				s.str = new char[1];	//改变s.str的存储空间
+				s.str[0] = 0;
+			}
+			//move assignment 移动赋值号，参数是右值引用 
+			String& operator = (String && s){
+				cout << "move operator = called" << endl;
+				if(str!=s.str){		//赋值号两边不是同一个对象的情况下
+					delete[] str;
+					str = s.str;
+					s.str = new char[1];
+					s.str[0] = 0;
+				 }
+				return *this;
+			}
+			~String() {delete[] str;}
+		};
+		template<class T>
+		void MoveSwap(T& a, T& b) {
+			T tmp(move(a));	//move操作把左值变右值，std::move(a)为右值，这里调用move constructor tmp.str现在是a.str指向的地方, a.str被指向了另外一个地方现在放着一个空串
+			a = move(b);	//move(b)为右值，这里调用move assignment，a，b应该是一个临时对象不怕被修改这样修改才没问题
+			b = move(tmp);	//move(tmp)为右值，这里调用move assignment
+		}
+		int main() {
+			String s;
+			s = String("ok");
+			String && r = String("this");
+			String s1 = "hello", s2 = "world";
+			MoveSwap(s1, s2);		//反正是为了交换s1,s2因此不介意这两个被临时修改为空串不影响最后结果，这样避免了S1，S2交换过程中的三次深拷贝
+			cout << s2.str << endl;
+			return 0;
+		}
+
+	8）无序容器（哈希表）
+		#include<unordered_map> 和map用法相同，时间效率比map更高,但需要更多的内存空间
+		unordered_map<string, int>::iterator p = turingWinner.find(name);
+
+	9）正则表达式
+		#include<regex> 描述一种字符串的模式 
+		regex reg("b.?p.*k");
+		regex_match("bopggk", reg); //返回值为1表示匹配成功，为0表示匹配失败
+
+	10）Lambda表达式
+		减省函数对象类和简单函数体
+		实际上是一个函数，形式：[外部变量访问方式说明符]（参数表）-> 返回值类型 { ... }
+		外部变量访问方式说明符：
+			[=] 	//以传值的形式使用所有外部变量
+			[] 	//不适用任何外部变量
+			[&]	//以传引用的形式使用外部变量
+			[x, &y]	// x传值， y传引用
+			[=, &x,&y]	//x,y以引用形式使用，其余变量传值
+			[&,x,y]
+
+		cout << [](double a, double b) {return a+b;} (1.2, 3.5) << endl;
+		auto ff = [=, &y, &z](int n){
+			cout << x << endl;
+			y++; z++;
+			return n*n;
+		}
+		cout << ff(15) << endl;
+		----------------------------------------------
+		int a[4] = {4, 2, 11, 33}
+		sort (a, a+4, [](int x, int y)->bool {return x%10 < y%10;});
+		for_each(a, a+4, [](int x) {cout << x << "";})
+		vector<int > a{1,2,3,4};
+		for_each(a.begin(), a.end(); [&](int& x) {total+=x; x*=2;});
+		
