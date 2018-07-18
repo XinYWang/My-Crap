@@ -1,0 +1,71 @@
+链表和栈的补充 Lecture Notes --3
+------------------------------------------------------------
+------------------------------------------------------------
+1. 链表逆序 --头插法
+	设置一个临时头节点temp_head，利用head指针遍历链表，每遍历一个节点即将该节点插入到temp_head后： temp_head->2->1,  3->4->5, 完成5号节点插入，所有节点均完成遍历，head指向了NULL
+	1.备份next = head->next 2.修改head->next, head->next = temp_head->next 3.修改temp_head，temp_head->next = head 4.移动head，head = next	
+	头插法：								
+		class solution{
+		public:
+			listnode* reverselist(listnode* head){
+				listnode temp_head(0);
+				while(head){
+					listnode* next = head->next;
+					head->next = temp_head->next;
+					temp_head->next = head;
+					head = next;
+				}
+				return temp_head.next;
+			}
+		};
+	就地逆置法：
+		class solution{
+		public:
+			listnode* reverselist(listnode* head){
+				listnode* new_head = NULL;
+				while(head){
+					listnode* next = head->next;
+					head->next = new_head;
+					new_head->next = head;
+					head = next;
+				}
+				return new_head;
+			}
+		};
+
+2. 用栈实现队列 --双栈法
+	1.push操作，直接将元素push至input_stack 2.pop和front操作时，需要进行调整，完成调整后直接返回output.top(), 调整算法：adjust，如果output不空，则不需要调整，否则将input_stack中的元素push进入output_stack。每push一个元素，input_stack弹出一个元素 3.empty操作，input与output均为空时，返回true，否则返回false 算法复杂度O(N)
+		class myqueue{
+		public:		
+			myqueue() {}
+			void push(int x){
+				_input.push(x);			//直接将x push进入input
+			}
+			int pop(){				//调整再进行pop
+				adjust();
+				int x = output.top();
+				_output.pop();
+				return x;
+			}
+			int peek(){				//调整并返回output_stack.top()
+				adjust();
+				return _output.top();
+			}
+			bool empty(){				//当两个栈同时为空时才返回true
+				return _input.empty() && _output.empty();
+			}
+		private:
+			void adjust(){
+				if(!output.empty()){
+					return;			
+				}
+				whie(!_input.empty()){		//调整的过程
+					_output.push(_input.top());	//将input_stack中的每个元素均push进入output_stack，每push一个input弹出一个
+					_intput.pop();
+				}
+			}
+
+3.
+			std::stack<int> _input;
+			std::stack<int> _output;
+		};

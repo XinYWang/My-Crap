@@ -1,0 +1,152 @@
+二叉树与图 Lecture Notes --4
+------------------------------------------------------------
+------------------------------------------------------------
+1. 二叉树基础知识
+	二叉树在满足树的条件时，还满足：每个节点最多有两个孩子，这两个子树有左右之分，次序不可颠倒
+	#include<stdio.h>
+	struct treenode{			//二叉树数据结构
+		int val;			//数据域
+		treenode *left;			//左右子树指针
+		treenode *right;
+		treenode(int x) : val(x), left(NULL), right(NULL){}
+	};
+	void preorder_print(treenode *node, int layer){	//正在遍历的节点和当前节点的层数
+		if(!node){
+			return ;
+		}
+		for(int i =0; i<layer; i++){		//根据层数打印相应的-----
+			printf("---------");
+		}
+		printf("[%d]\n", node->val);
+		preorder_print(node->left, layer+1);	//遍历左子树，层数+1
+		preorder_print(node->right, layer+1);	//遍历左子树，层数+1
+	} 
+	void traversal(treenode *node){		//二叉树的深度遍历
+		if(!node){
+			return ;
+		}
+		//此时访问node为前序遍历		//访问顺序：本身节点，左子树，右子树  	abdecf
+		traversal(node->left);
+		//此时访问node为中序遍历		///访问顺序：左子树，本身节点，右子树	dbeacf
+		traversal(node->right);
+		//此时访问node为后序遍历		///访问顺序：左子树，右子树，本身节点	debfca
+	}	
+
+	int main(){
+		treenode a(1);
+		treenode b(2);
+		treenode c(3);
+		treenode d(4);
+		treenode e(5);
+		a.left = &b;
+		a.right = &c;
+		b.left = &d;
+		b.right = &e;
+		preorder_print(&a, 0);
+		return 0;
+	}
+
+2. 路径之和
+	给定一个二叉树与整数sum，找出所有从根结点到叶节点的路径，这些路径上的节点值累加和为sum
+	使用哪种数据结构存储遍历路径上的节点，在树的前序/后序遍历时应该做什么，怎么判断一个节点为叶节点，当遍历到叶节点时应该做什么
+	思路： 1.从根节点深度遍历二叉树，先序遍历时，将该节点值存储至path栈中(vector实现)，使用path_value累加节点值 2.当遍历到叶节点时，检查path_value值是否为sum，若是，则将path push进入resul结果中 3.在后序遍历时，将该节点值从path栈中弹出，path_value减去节点值
+	#include<vector>
+	class solution{
+	public:
+		std::vector<std::vector<int> > pathsum(treenode* root, int sum){
+			std::vector<std::vector<int> > result;			//存储满足条件路径的数组
+			std::vector<int> path;
+			int path_value;						//路径值与路径栈
+			preorder(root, path_value, sum, path, result);		
+			return result;
+		}
+	private:
+		void preorder(treenode *node, int &path_value, int sum, std::vector<int> &path, std::vector<std::vector<int> > &result){
+			if(!node){
+				return;
+			}
+			path_value += node->val;
+			path.push_back(node->val);
+			if(path_value == sum && !node->left && !node->right){	//满足该条件时，将path添加至结果数组
+				result.push_back(path);
+			}
+			preorder(node->left, path_value, sum, path, result);
+			preorder(node->right, path_value, sum, path, result);
+			path_value -= node->val;				//将该节点从目前的累加值中减去
+			path.pop_back();					//遍历完成后，将该节点从路径栈中弹出
+		}
+	};
+
+3. 最近的公共祖先
+	已知二叉树，求二叉树中给定的两个节点的最近公共祖先（两节点v,w的最近公共祖先u满足在树上最低，离根最远，且v,w两个节点都是u的子孙）
+	两个节点的公共祖先一定在从根节点至这两个节点的路径上；由于求公共祖先的最近公共祖先，那么即同时出现在这两条路径上的离根节点最远的节点 
+	思路：求p节点路径，q节点路径，两路径上最后一个相同的节点。
+	1）求根节点至某节点路径：1.从根节点遍历至该节点，找到该节点后就结束搜索 2.将遍历过程中遇到的节点按照顺序存储起来，这些节点即路径节点
+		void preorder(traversal* node, traversal* search, std::vector<treenode*> &path, std::vector<traversal*> &result, int &finish){	//正在遍历的节点，待搜索节点，遍历时的节点路径,最终搜多到节点search的路径结果，finish记录找到是否找到节点search
+			if(!node || finish){				//当node为空或以找到search节点直接返回，结束搜索
+				return;
+			}
+			path.push_back(node);				//先序遍历时，将节点压入path栈
+			if(node == search){			
+				finish = 1;
+				result = path;				//将但前的path存储到result中
+			}
+			preorder(node->left, search, path, result, finish);
+			preorder(node->right, search,  path, result, finish);
+			path.pop_back();				//结束遍历node时，将node节点弹出path栈
+		}
+	2）求出较短路径的长度n，同时遍历p节点的路径与q节点的路径，遍历n个节点，最后一个发现的相同节点即最近公共祖先
+	整体代码：
+		class solution{
+		public:
+			treenode* lowestcommonancestor(treenode* root, treenode* p, treenode* q){
+				std::vector<treenode*> path;
+				std::vector<treenode*> node_p_path;
+				std::vector<treenode*> node_q_path;
+				int finish = 0;
+				preorder(root, p, path, node_q_path, finish);		//先找p节点路径
+				path.clear();						//清空path，finish
+				finish = 0;
+				preorder(root, q, path, node_q_path, finish);		//再找p节点路径
+				int path_len = 0;
+				if(node_p_path.size() < node_q_path.size()){		//取较短路径的长度
+					path_len = node_p_path.size();
+				}
+				else{
+					path_len = node_q_path.size();
+				}
+				treenode *result = 0;
+				for(int i=0; i< path_len; i++){
+					if(node_p_path[i] == node_q_path[i]){ 	//同时遍历根到p，q两个节点的路径上的节点
+						result = node_p_path[i];	//一直更新rusult直到这两个路径上的节点不相等
+					}
+				}
+				return result;
+			}
+		};
+	
+3. 二叉树转链表
+	给定一个二叉树，将该二叉树就地转换为单链表。单链表中节点顺序为二叉树前序遍历顺序
+	方法一：没有就地转换，投机取巧的方法：前序遍历二叉树，将节点指针push进入vector，顺序遍历vector中的节点，连接相邻两节点，前面的节点左指针置空，有指针与后面的节点相连，形成单链表
+		#include<vector>
+		class solution{
+		public:
+			void flatten(treenode* root){
+				std::vector<treenode*> node_vec;
+				preorder(root, node_vec);
+				for(int i=1; i<node_vec.size(); i++){
+					node_vec[i-1]->left = NULL;
+					node_vec[i-1]->right = node_vec[i];
+				}
+			}
+		private:
+			void preorder(treenode* node, std::vector<treenode*> &node_vec){
+				if(!node){
+					return;
+				}
+				node_vec.push_back(node)
+				preorder(node-left, node_vec);
+				preorder(node->right, node_vec);
+			}
+		};
+	方法二：

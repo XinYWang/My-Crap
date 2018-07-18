@@ -1,0 +1,288 @@
+链表 Lecture Notes --1
+------------------------------------------------------------
+------------------------------------------------------------
+1. 链表基础	
+	struct listnode{
+		int val;
+		listnode* next;	//存储下一个结点的指针域
+		listnode(int x):val(x), next(NULL){}
+	};
+	int main(){
+		listnode a;
+		listnode b;
+		listnode c;
+		a.val = 10;
+		b.val = 20;
+		c.val = 30;
+		a.next = &b;
+		b.next = &c;
+		c.next = NULL;
+		listnode *head = &a;
+		while(head){
+			printf("%d\n", head -> val);
+			head = head -> next;
+		}
+		return 0;
+	}	
+
+2. 链表逆序-a
+	步骤：一次遍历链表节点，每遍历一个节点就逆置一个节点。1.备份head->next 2.修改head->next 3.移动head与new_head
+	class solution{
+	public: 
+		listnode* reverselist(listnode* head){
+			listnode* new_head = NULL;
+			while(head){
+				listnode* next = head -> next;	//备份head->next
+				head_next = new_head;		//更新
+				new_head = head;		//移动
+				head = next;	
+			}
+			return new_head;
+		}
+	};
+
+3. 链表逆序-b 
+	已知链表头节点指针head，将链表从位置m到n逆序，不申请额外空间
+	寻找关键节点: 逆值段头节点的前驱，逆置前头节点（逆置后尾节点），逆置前尾节点（逆置后头节点），逆置段尾节点的后继
+	步骤	1. 将head向前移动M-1个位置，找到开始逆置的节点，记录存储该节点和其前驱（pre_head）
+		2. 从head开始，逆置change_len = n-m+1 个节点
+		3. 将pre_head与new_head连接，modify_list_tail与head连接
+	class solution{
+	public: 
+		listnode* reversebetween(listnode* head, int m , int n){
+			int change_len = n-m+1;
+
+			listnode* pre_head = NULL;		//初始化开始逆置的节点的前驱
+			listnode* result = head;		//最终转换后的链表头节点
+					
+			while(head && --m){			//head向前移动M-1个位置
+				pre_head = head;		//记录head的前驱
+				head = head -> next;
+			}
+			listnode* modify_list_tail = head;	//将modify_list_tail指向当前的head，即逆置后的链表尾
+			listnode* new_head = NULL;
+
+			while(head && change_len){		//逆置change_len个节点
+				listnode* next = head -> next;	//备份head->next
+				head_next = new_head;		//更新
+				new_head = head;		//移动
+				head = next;	
+				change_len--;
+			}
+			modify_list_tail->next = head;		//连接逆置后的链表尾与逆置段的后一个节点
+			if(pre_head) {
+				pre_head->next = new_head；	//如果pre_head不空，说名不是从第一个节点开始逆置的，m>1，将逆置链表开始的节点前驱与逆置后的头节点连接
+			}
+			else{	
+				result = new_head;		//m==1从第一个节点开始逆置，结果为逆置后的头节点
+			}
+			return result;
+		}
+	};
+
+4. 求两个链表的交点
+	已知链表A 的头节点和B的头节点，两个链表相交，求两链表交点对应的交点. 如果没有交点，返回NULL，要求时间复杂度O(N), 空间复杂度O(1)
+	思路1. set的使用，找相同元素。 遍历链表A，将A中节点对应的指针插入set；遍历链表B，将B中对应的指针在set中查找，发现在set中的第一个节点地址，即是两个链表的交点。但空间复杂度是O(n)
+	思路2. 计算较长链表多出的长度，将较长链表的指针移动到和较短链表指针对齐的位置，headA与headB同时移动，当两指针指向同一节点时就找到了
+		
+5. 链表求环
+	链表可能存在环，若有环则返回环起始节点，否则返回NULL
+	思路1，使用set。遍历链表A，将链表中节点对应的指针插入set；在遍历时插入节点前，需要在set中查找，第一个在set中已经存在的节点地址，即链表环的起点
+		class solution{
+		public:
+			listnode* detectcycle(listnode* head){
+				std::set<listnode*>node_set;
+				while(head){
+					if(node_set.find(head)!=node_set.end()){	//没有到结尾，找到了出现了，返回环的第一个节点
+						return head;					
+					}
+					node_set.insert(head);				//遍历中将节点插入node_set
+					head = head->next;
+				}
+				return NULL;	
+			}
+		}; 	
+	思路2，快慢指针赛跑。快指针每次遍历走两步，慢指针走一步，两个指针在环的某处相遇。可证a=c，即head到环的起点和meet到环的起点的距离相同，从head与meet出发，两指针速度一样，相遇时即为环的起点
+		class solution{
+		public:
+			listnode* detectcycle(listnode* head){
+				listnode* fast = head;
+				listnode* slow = head;
+				listnode* meet = NULL;
+				while(fast){
+					slow = slow->next;
+					fast = fast->next;
+					if(!fast){
+						return NULL;	//如果fast遇到链表尾，则返回NULL
+					}
+					fast = fast->next;	//fast每次多走一步
+
+					if(fast == slow){
+						meet = fast;						
+					break;
+					}
+				}
+				if(meet == NULL){
+					return NULL;
+				}
+				while(head && meet){
+					if(meet == head){
+						return head;
+					}
+					head = head->next;
+					meet = meet->next;
+				}
+				return NULL;	
+			}
+		}; 	
+
+6. 链表划分
+	已知链表头指针head与数值x，将所有小与x的节点放在大于或等于x的节点前，且保持这些节点的原来的相对位置
+	思路：巧用临时头节点less_head和more_head，遍历链表，把各节点根据大小分别插入这两个节点后面，最后连接less_ptr->next和more_head.next，置空more_ptr->next，返回less_head.next。
+		class solution{
+		public:
+			listnode* partition(listnode* head, int x){
+				listnode less_head(0);			//两个临时头节点
+				listnode more_head(0);
+				listnode* less_ptr = &less_head;
+				listnode* more_ptr = &more_head;
+				while(head){
+					if(head->val < x){
+						less_ptr->next = head;
+						less_ptr = head;	//连接完成后,less_ptr向后移动，指向head
+					}
+					else {				//否则将该节点插入more_ptr后
+						more_ptr->next = head;
+						more_ptr = head;
+					}
+					head = head->next;		//看原链表下一个元素
+				}
+				less_ptr->next = more_head.next;	//less链表尾与more链表头相连
+				more_ptr->next = NULL;
+				return less_head.next;
+			}
+		};
+
+7. 复杂的链表的深度拷贝
+	已知一个复杂的链表，节点中有一个指向本链表任意某个节点的随机指针（也可以为空），求这个链表的深度拷贝
+	每个节点还有一个random指针可以随便指，即带有随机指针的链表节点。深度拷贝：构造生成一个全新的链表，即将原链表毁坏，新链表可独立使用。难点在这个random逻辑关系的拷贝
+	STL Map的使用，设置一个节点map，key为节点地址，value为节点序号。地址和序号一一映射
+		class solution{
+		public:
+			listnode* copyrandomlist(randomlistnode* head){
+				std::map<randomlistnode&, int>node_map;
+				std::vector<randomlistnode* >node_vec;		//使用vector根据存储节点位置访问地址
+				randomlistnode* ptr = head;
+				int i = 0;	
+				while(ptr){					//将新链表节点push如node_vec，生成了新链表节点位置到地址的map
+					node_vec.push_back(new randomlistnode(ptr->label));
+					node_map[ptr] = i;			//记录原始链表地址至节点位置的node_map
+					ptr = ptr->next;
+					i++;
+				}				
+				node_vec.push_back(0);
+				ptr = head;
+				i = 0;
+				while(ptr){
+					node_vec[i]->next = node_vec[i+1];	//连接新链表next指针
+					if(ptr->random){
+						int id = node_map(ptr->random);	//根据node_map确认
+						node_vec[i]->random = node_vec[id]; //原链表random指针指向的位置即id
+					}
+					ptr = ptr->next;
+					i++;
+				}
+				return node_vec(0);
+			}
+		};
+
+8. 两个排序链表的合并
+	合并两个已排序的链表，合并后依然有序，返回后并后的头节点
+	设置一个临时头节点和指向它的指针pre，遍历两个链表，比较两个链表指针指向的节点，将较小的节点插入到pre指针后，并向前移动较小节点对应的指针。
+		class solution{
+		public:
+			listnode* mergetwolist(listnode* l1, listnode* l2){
+				listnode temp_head(0);
+				listnode* pre = temp_head;
+				
+				while(l1 && l2){					
+					if(l1->val < l2->val){
+						pre->next = l1;
+						l1 = l1->next;
+					}
+					else {
+						pre->next = l2;
+						l2 = l2->next;
+					}
+					pre = pre->next;
+				}				
+				if(l1){
+					pre->next = l1;
+				}
+				if(l2){
+					pre->next = l2;
+				}
+				return temp_head.next;
+			}
+		};
+
+9. 多个排序链表的合并
+	合并k个已排序的链表，合并后依然有序，返回后并后的头节点
+	思路1，将k*n个节点放到vector中，再将vector排序，在将节点顺序相连，时间复杂度O(nk*log(nk))
+		#include<vector>
+		#include<algorithm>
+		bool cmp(const listnode* a, const listnode* b){
+			return a->val < b->val;		
+		}		
+		class solution{
+		public:
+			listnode* mergeklist(std::vector<listnode*>& lists){	//链表头节点使用vector
+				std::vector<listnode*>node_vec;
+				for(int i=o; i< lists.size(); i++){
+					listnode* head = lists[i];		//遍历k个链表，将节点全部添加至vector
+					while(head){
+						node_vec.push_back(head);
+					}
+					head = head->next;	
+				}
+				if(node_vec.size() == 0){
+					return NULL;
+				}			
+				std::sort(node_vec.begin(), node_vec.end(), cmp);//根据节点数值进行排序
+				for(int i =1; i<node_vec.size(); i++){
+					node_vec[i-1]->next = node_vec[i];	//连接成新的链表
+				}
+				node_vec[node_vec.size()-1]->next = NULL;
+				return node_vec[0];
+			}
+		};
+	思路2，分治，两两进行合并，时间复杂度O(kn*logk)
+		class solution{
+		public:
+			listnode* mergeklist(std::vector<listnode*>& lists){	//链表头节点使用vector
+				if(lists.size() == 0){
+					return NULL;				
+				}
+				if(lists.size() == 1){
+					return lists[0];				
+				}
+				if(lists.size() == 2){
+					return mergetwolists(lists[0], lists[1]);				
+				}
+				int mid = lists.size()/2;
+
+				std::vector<listnode*>sub1_lists;
+				std::vector<listsnode*>sub2_lists;
+
+				for(int i=0; i<mid; i++){
+					sub1_lists.push_back(lists[i]);
+				}
+				for(int i=mid; i<lists.size(); i++){
+					sub2_lists.push_back(lists[i]);
+				}
+
+				listnode* l1 = mergeklist(sub1_lists);
+				listnode* l2 = mergeklist(sub2_lists);
+				return mergetwolists(l1, l2);
+			}
+		};
